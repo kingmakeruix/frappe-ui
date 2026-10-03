@@ -195,9 +195,11 @@ function normalizeIncoming(val?: string[] | null): [string, string] {
 
 function parseRangeInput(raw: string): [Dayjs | null, Dayjs | null] {
   if (!raw.trim()) return [null, null]
-  const normalized = raw.replace(/\s+to\s+/i, ',').replace(/\s+-\s+/g, ',')
-  const parts = normalized
-    .split(',')
+  // Only the " to " and " - " separators may split a range. A comma is part of
+  // the date itself for formats like "MMM DD, YYYY", so splitting on it tears
+  // each end in half.
+  const parts = raw
+    .split(/\s+to\s+|\s+-\s+/i)
     .map((p) => p.trim())
     .filter(Boolean)
   if (!parts.length) return [null, null]
@@ -259,6 +261,12 @@ function commitInput(close = false): void {
   const raw = inputValue.value.trim()
   if (!raw) {
     clearSelection()
+    if (close && !shouldKeepOpen.value) isOpen.value = false
+    return
+  }
+  // Opening the picker sets `typing`, so a plain click-and-close reaches this
+  // with the text untouched. Re-parsing it would emit the current value back.
+  if (raw === displayLabel.value.trim()) {
     if (close && !shouldKeepOpen.value) isOpen.value = false
     return
   }

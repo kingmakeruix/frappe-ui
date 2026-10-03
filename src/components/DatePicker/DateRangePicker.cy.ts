@@ -298,6 +298,38 @@ describe('DateRangePicker', () => {
     })
   })
 
+  // A `format` that contains a comma puts a comma inside each date, so
+  // splitting on every comma takes the range apart mid-date.
+  it('typed range with a comma inside the format parses both ends', () => {
+    cy.mount(DateRangePicker, {
+      props: {
+        format: 'MMM DD, YYYY',
+        'onUpdate:modelValue': cy.spy().as('onUpdate'),
+      },
+    })
+    cy.get('input').click()
+    cy.get('input').type('Jun 10, 2025 to Jun 15, 2025{enter}')
+    cy.get('@onUpdate').should((spy: any) => {
+      const last = spy.lastCall.args[0]
+      expect(last).to.deep.equal(['2025-06-10', '2025-06-15'])
+    })
+  })
+
+  // Closing the popover without typing must not commit the displayed label.
+  it('closing without a change emits nothing', () => {
+    cy.mount(DateRangePicker, {
+      props: {
+        modelValue: ['2025-06-10', '2025-06-15'],
+        format: 'MMM DD, YYYY',
+        'onUpdate:modelValue': cy.spy().as('onUpdate'),
+      },
+    })
+    cy.get('input').click()
+    cy.get('body').click(0, 0)
+    cy.get('@onUpdate').should('not.have.been.called')
+    cy.get('input').should('have.value', 'Jun 10, 2025 to Jun 15, 2025')
+  })
+
   // `open` and `setOpen` are the public slot contract, so a rename here is a
   // silent break in consumer templates. Popover carries the same test.
   it('exposes open and setOpen to the #trigger slot', () => {
